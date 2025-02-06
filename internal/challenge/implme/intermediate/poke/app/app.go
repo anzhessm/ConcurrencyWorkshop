@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/romangurevitch/concurrencyworkshop/internal/challenge/implme/intermediate/poke/client"
+	"github.com/romangurevitch/concurrencyworkshop/internal/pattern/future"
 )
 
 const (
@@ -50,8 +51,7 @@ func (p *pokeAPP) Start() {
 	myWindow.Resize(fyne.NewSize(windowWidth, windowHeight))
 
 	p.input.SetPlaceHolder("e.g., pikachu or 25")
-	// TODO: impl and use OnChangedNonBlocking to improve responsiveness of the app
-	p.input.OnChanged = p.OnChanged
+	p.input.OnChanged = p.OnChangedNonBlocking
 
 	content := container.NewStack(container.NewVBox(p.header, p.input), p.img)
 	myWindow.SetContent(content)
@@ -73,8 +73,18 @@ func (p *pokeAPP) OnChanged(id string) {
 //
 // The function is currently not implemented and will panic if used.
 // TODO: Implement OnChangedNonBlocking to fetch and update Pokémon details asynchronously.
-func (p *pokeAPP) OnChangedNonBlocking(_ string) {
-	panic("implement me!")
+func (p *pokeAPP) OnChangedNonBlocking(id string) {
+	getPokeFuture := future.NewFuture(
+		context.Background(),
+		func(ctx context.Context) (bool, error) {
+			return p.fetchAndUpdatePokemon(id)
+		})
+
+	result := getPokeFuture.Result()
+	if result.Err != nil {
+		slog.Error("fetchAndUpdatePokemon", "error", result.Err)
+	}
+
 }
 
 func (p *pokeAPP) fetchAndUpdatePokemon(id string) (bool, error) {
